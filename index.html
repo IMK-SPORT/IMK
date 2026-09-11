@@ -1,229 +1,52 @@
-<!DOCTYPE html>
-<html lang="ckb" dir="rtl">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HLS Player - IMK SPORT</title>
-    <!-- Video.js CSS -->
-    <link href="https://vjs.zencdn.net/8.10.0/video-js.css" rel="stylesheet" />
-    <style>
-        /* 1. بەستنەوەی فۆنتی نوێی IMK Regular */
-        @font-face {
-            font-family: 'IMK Regular';
-            src: url('IMK-regular.ttf') format('truetype');
-            font-weight: normal;
-            font-style: normal;
-        }
+import pandas as pd
+from PIL import Image, ImageDraw, ImageFont
+import os
 
-        body {
-            background-color: #0d1117;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            font-family: 'IMK Regular', Tahoma, sans-serif;
-        }
+# Create output folder if it doesn't exist
+output_dir = "render_PNG"
+if not os.path.exists(output_dir):
+    os.makedirs(output_dir)
 
-        /* کانتێنەری سەرەکی پلەیەرەکە */
-        .video-container {
-            position: relative;
-            width: 100%;
-            max-width: 900px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
-            border-radius: 12px;
-            overflow: hidden;
-            background-color: #000;
-        }
+# Read Excel File
+df = pd.read_excel("data.xlsx")
 
-        /* کانتێنەری لۆگۆ و دەقەکان */
-        .logo-box {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            z-index: 10;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            align-items: flex-end;
-            transition: all 0s step-end;
-        }
+# Load Font
+font_path = "BAHI.ttf"
+font_size = 50
+font = ImageFont.truetype(font_path, font_size)
 
-        /* دیزاینی لۆگۆ */
-        .player-logo {
-            width: 160px;
-            height: auto;
-            filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.6));
-            transition: all 0s step-end;
-        }
+# Load Logo
+logo_path = "IMK_SPORT_2.png"
+logo = Image.open(logo_path).convert("RGBA")
 
-        /* دەقەکانی ژێر لۆگۆ کاتێک ستریم پچڕاوە */
-        .stream-message {
-            display: none;
-            color: #ffffff;
-            text-align: center;
-            margin-top: 15px;
-            font-family: 'IMK Regular', sans-serif;
-        }
+# Frame size setup
+canvas_width = 1920
+canvas_height = 100
 
-        .stream-message h2 {
-            margin: 0 0 10px 0;
-            font-size: 22px;
-            color: #ffd700;
-            font-family: 'IMK Regular', sans-serif;
-        }
+for index, row in df.iterrows():
+    text = str(row['ticker'])
+    
+    # Create transparent canvas
+    base_img = Image.new("RGBA", (canvas_width, canvas_height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(base_img)
+    
+    # Calculate Text Position (Y-axis centered)
+    bbox = font.getbbox(text)
+    text_height = bbox[3] - bbox[1]
+    text_y = (canvas_height - text_height) // 2
+    
+    # Draw text in WHITE color
+    draw.text((10, text_y), text, font=font, fill=(255, 255, 255, 255))
+    
+    # Position and paste Logo (Right side)
+    logo_x = canvas_width - logo.width - 10
+    logo_y = (canvas_height - logo.height) // 2
+    
+    # Paste logo preserving transparency mask
+    base_img.paste(logo, (logo_x, logo_y), logo)
+    
+    # Save output frame
+    output_path = os.path.join(output_dir, f"frame_{index:04d}.png")
+    base_img.save(output_path, "PNG")
 
-        .stream-message p {
-            margin: 0;
-            font-size: 15px;
-            color: #cccccc;
-            font-family: 'IMK Regular', sans-serif;
-        }
-
-        /* ستایلی کاتێک ستریم نەماوە */
-        .stream-offline .logo-box {
-            top: 50%;
-            left: 50%;
-            right: auto;
-            transform: translate(-50%, -50%);
-            align-items: center;
-            width: 90%;
-        }
-
-        .stream-offline .player-logo {
-            width: 200px;
-        }
-
-        .stream-offline .stream-message {
-            display: block;
-        }
-
-        /* ستایلی تیکەری خوارەوەی شاشە */
-        .ticker-bar {
-            position: absolute;
-            bottom: 45px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 20;
-            background: rgba(0, 0, 0, 0.85);
-            color: #ffd700;
-            padding: 8px 20px;
-            border-radius: 6px;
-            border: 1px solid rgba(255, 215, 0, 0.4);
-            font-size: 15px;
-            white-space: nowrap;
-            pointer-events: none;
-            opacity: 0;
-            transition: opacity 0.5s ease-in-out;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-            box-sizing: border-box;
-            text-align: center;
-            font-family: 'IMK Regular', sans-serif;
-        }
-
-        .ticker-bar.show {
-            opacity: 1;
-        }
-
-        /* ڕێکخستنی تایبەت بۆ شاشەی مۆبایل */
-        @media (max-width: 768px) {
-            .player-logo {
-                width: 80px;
-            }
-
-            .logo-box {
-                top: 8px;
-                right: 8px;
-            }
-
-            .stream-offline .player-logo {
-                width: 130px;
-            }
-
-            .stream-offline .stream-message h2 {
-                font-size: 18px;
-            }
-
-            .stream-offline .stream-message p {
-                font-size: 13px;
-            }
-
-            .ticker-bar {
-                bottom: 30px;
-                font-size: 10px;
-                padding: 4px 10px;
-                max-width: 95%;
-                width: auto;
-                white-space: nowrap;
-            }
-        }
-
-        .video-js {
-            width: 100%;
-            height: auto;
-            aspect-ratio: 16 / 9;
-        }
-    </style>
-</head>
-<body>
-
-    <div class="video-container" id="videoContainer">
-        <!-- کانتێنەری لۆگۆ و ئاگادارییەکان -->
-        <div class="logo-box">
-            <img src="IMK_SPORT_LOGO.png" alt="IMK SPORT Logo" class="player-logo">
-            <div class="stream-message">
-                <h2>هەموو وەرزشێک لەماڵەکەتدا</h2>
-                <p>ببورن لە ئێستادا ستریم بچڕاوە لە نزیکترین کاتدا دەگەڕیینەوە</p>
-            </div>
-        </div>
-
-        <!-- تیکەری خوارەوە -->
-        <div class="ticker-bar" id="tickerBar">
-            پەخشی ئەزموونی IMK SPORT
-        </div>
-
-        <!-- پلەیەری ڤیدیۆ -->
-        <video
-            id="my-video"
-            class="video-js vjs-big-play-centered vjs-theme-city"
-            controls
-            preload="auto"
-            data-setup="{}">
-            <source src="https://vsd288.okcdn.ru/hls/21847490235045.m3u8/sig/ZLK4HaBt3Dg/expires/1789155785205/srcIp/62.201.244.135/urls/178.237.23.122/clientType/0/srcAg/CHROME/mid/17725702938277/21847490235045_high/index.m3u8" type="application/x-mpegURL">
-            تێبینی: وێبگەڕەکەت پشتگیری لەم ڤیدیۆیە ناکات.
-        </video>
-    </div>
-
-    <!-- Video.js JS -->
-    <script src="https://vjs.zencdn.net/8.10.0/video.min.js"></script>
-    <script>
-        const player = videojs('my-video');
-        const container = document.getElementById('videoContainer');
-        const ticker = document.getElementById('tickerBar');
-
-        player.on('error', function() {
-            container.classList.add('stream-offline');
-        });
-
-        player.on('playing', function() {
-            container.classList.remove('stream-offline');
-        });
-
-        player.on('loadeddata', function() {
-            container.classList.remove('stream-offline');
-        });
-
-        // تایمەری دەستپێکردن و شاردنەوەی تیکەر بە ئەنیمەیشنی Smooth
-        function showTicker() {
-            ticker.classList.add('show');
-            setTimeout(function() {
-                ticker.classList.remove('show');
-            }, 5000); // ٥ چرکە دەمێنێتەوە
-        }
-
-        // دەستپێکردنی تیکەر ٣ چرکە دوای باربوونی لاپەڕەکە و دواتر هەموو ٥ خولەک جارێک
-        setTimeout(showTicker, 3000);
-        setInterval(showTicker, 300000); // ۳۰۰,۰۰۰ میلی‌چرکە = ۵ خولەک
-    </script>
-</body>
-</html>
+print("ڕەندەرکردن بە سەرکەوتوویی تەواو بوو!")
