@@ -1,52 +1,42 @@
-import pandas as pd
-from PIL import Image, ImageDraw, ImageFont
-import os
+<!DOCTYPE html>
+<html lang="ckb" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IMK Documentary Overlay</title>
+    <style>
+        /* پێناسەکردنی فۆنتی نوی لە گیتهەپ */
+        @font-face {
+            font-family: 'IMKFontRegular';
+            src: url('IMKFontRegular-Regular.ttf') format('truetype');
+            font-weight: normal;
+            font-style: normal;
+        }
 
-# Create output folder if it doesn't exist
-output_dir = "render_PNG"
-if not os.path.exists(output_dir):
-    os.makedirs(output_dir)
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: transparent;
+            font-family: 'IMKFontRegular', sans-serif;
+        }
 
-# Read Excel File
-df = pd.read_excel("data.xlsx")
+        .title-container {
+            font-family: 'IMKFontRegular', sans-serif;
+            direction: rtl;
+            text-align: right;
+        }
 
-# Load Font
-font_path = "BAHI.ttf"
-font_size = 50
-font = ImageFont.truetype(font_path, font_size)
+        .main-text {
+            font-size: 36px;
+            color: #ffffff;
+        }
+    </style>
+</head>
+<body>
 
-# Load Logo
-logo_path = "IMK_SPORT_2.png"
-logo = Image.open(logo_path).convert("RGBA")
+    <div class="title-container">
+        <h1 class="main-text">هەموو وەرزشێک</h1>
+    </div>
 
-# Frame size setup
-canvas_width = 1920
-canvas_height = 100
-
-for index, row in df.iterrows():
-    text = str(row['ticker'])
-    
-    # Create transparent canvas
-    base_img = Image.new("RGBA", (canvas_width, canvas_height), (0, 0, 0, 0))
-    draw = ImageDraw.Draw(base_img)
-    
-    # Calculate Text Position (Y-axis centered)
-    bbox = font.getbbox(text)
-    text_height = bbox[3] - bbox[1]
-    text_y = (canvas_height - text_height) // 2
-    
-    # Draw text in WHITE color
-    draw.text((10, text_y), text, font=font, fill=(255, 255, 255, 255))
-    
-    # Position and paste Logo (Right side)
-    logo_x = canvas_width - logo.width - 10
-    logo_y = (canvas_height - logo.height) // 2
-    
-    # Paste logo preserving transparency mask
-    base_img.paste(logo, (logo_x, logo_y), logo)
-    
-    # Save output frame
-    output_path = os.path.join(output_dir, f"frame_{index:04d}.png")
-    base_img.save(output_path, "PNG")
-
-print("ڕەندەرکردن بە سەرکەوتوویی تەواو بوو!")
+</body>
+</html>
